@@ -10,6 +10,9 @@ import java.io.PrintStream;
 import org.avis.client.NotificationEvent;
 import org.avis.client.NotificationListener;
 
+import au.edu.uq.csse7014.assignment1.PseudoRPC.HomeManagerRPCClientStub;
+import au.edu.uq.csse7014.assignment1.PseudoRPC.HomeManagerRPCServerStub;
+
 public class HomeManager implements NotificationListener{
 
 	private boolean inhabited;
@@ -19,16 +22,20 @@ public class HomeManager implements NotificationListener{
 	private String username;
 	private String currentDay;
 	private PrintStream p;
+	private HomeManagerRPCServerStub serverStub;
+	private HomeManagerRPCClientStub clientStub;
 	
 	
-	public HomeManager(String logFile){
+	public HomeManager(String logFile, String server, String applicationId, String id){
+		
+		serverStub = new HomeManagerRPCServerStub(this, server, applicationId, id);
 		
 		this.logFile = logFile;
 		FileOutputStream out; // declare a file output object
 		// declare a print stream object
 
 		// Create a new file output stream
-		// connected to "myfile.txt"
+		// connected to logFile
 		try {
 			out = new FileOutputStream(logFile);
 
@@ -42,7 +49,8 @@ public class HomeManager implements NotificationListener{
 	}
 	
 	
-	public void logTemp(int temp){
+	public void logTemp(int temp)
+	{
 		p.println ("This is written to a file");
 		p.println(currentDay + ": Air-conditioning adjusted.");
 		p.println("Temperature: at " + temp + "degrees");
@@ -64,6 +72,17 @@ public class HomeManager implements NotificationListener{
 		TempHandlerThread thread = new TempHandlerThread();
 		thread.init(temp, this);
 		thread.run();
+	}
+	
+	
+	public void handleTracking(boolean inhabited){
+		if ( inhabited != this.inhabited){
+			this.inhabited = inhabited;
+		}
+	}
+	
+	public void handleClock(String day){
+		this.currentDay = day;
 	}
 	
 	public class TempHandlerThread extends Thread{
@@ -121,12 +140,27 @@ public class HomeManager implements NotificationListener{
 		return builder.toString();
 	}
 	
-	
-
+	public void shutdown(){
+		
+		System.exit(0);
+	}
 	@Override
 	public void notificationReceived(NotificationEvent arg0) {
 		// TODO Auto-generated method stub
 		
+	}
+
+
+	public Object getProgrammeDescription(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+
+	public Object getProgrammeForPeriod(String stringValue, int intValue1,
+			int intValue2) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

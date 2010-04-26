@@ -11,18 +11,33 @@ import org.avis.client.Elvin;
 import org.avis.client.NotificationEvent;
 import org.avis.client.NotificationListener;
 
+import au.edu.uq.csse7014.assignment1.PseudoRPC.EPGPseudoRPCServerStub;
 import au.edu.uq.csse7014.assignment1.model.Programme;
 
-public class EPG implements NotificationListener{
+public class EPG {
 
 	public enum Keys {name,day,time,description};
 	
 	private ArrayList<Programme> listProg;
 	
-	private Elvin elvin;
 	
-	EPG(){
+	private EPGPseudoRPCServerStub rpcServerStub;
+	private boolean active;
+	
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+
+	EPG(String datafile, String server, String applicationId, String id){
 		listProg = new ArrayList<Programme>();
+		loadDataFile(datafile);
+		rpcServerStub = new EPGPseudoRPCServerStub(this, server, applicationId, id);
+		rpcServerStub.listen();
 	}
 	
 	
@@ -99,13 +114,17 @@ public class EPG implements NotificationListener{
 		}
 		return programmes;
 	}
-
-
-	@Override
-	public void notificationReceived(NotificationEvent event) {
-		if(event.notification.get("NAME").equals("shutdown")) {
-			elvin.close();
-			System.exit(0);
-		}	
+	
+	public void main(String [] args){
+		if (args.length < 2){
+			System.err.println("Use : java EPG [predefined-data-file][ElvinURL]");
+			System.exit(1);
+		}
+		String applicationid = "42207313";
+		String id = "EPG1";
+		EPG epg = new EPG(args[0],args[1],applicationid,id);
+		while (epg.active){
+			
+		}
 	}
 }

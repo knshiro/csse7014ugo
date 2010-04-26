@@ -15,11 +15,18 @@ import au.edu.uq.csse7014.assignment1.components.sensors.TempSensor;
 
 public class Sensor implements NotificationListener {
 
+	private String id;
+	private String applicationId;
 	private ISensor sensor;
 	private LoopThread loop;
 	private Elvin elvin;
+	private boolean active;
 	
-	Sensor(String type, String filename, String server){
+	Sensor(String type, String filename, String server, String applicationId, String id){
+		
+		this.applicationId  = applicationId;
+		this.id = id;
+		
 		Subscription sub;
 		if(type == "temperature"){
 			sensor = new TempSensor();
@@ -30,9 +37,8 @@ public class Sensor implements NotificationListener {
 		
 		try {
 			elvin = new Elvin(server);
-			sub = elvin.subscribe("NAME == 'test'");
+			sub = elvin.subscribe("APPLICATIONID == '"+ applicationId +"' && DESTID='"+ id + "'");
 			sub.addListener(this);
-			
 			
 		} catch (ConnectException e) {
 			// TODO Auto-generated catch block
@@ -50,10 +56,10 @@ public class Sensor implements NotificationListener {
 	}
 	
 	void startLoop(){
-		
+		active = true;
 		loop = new LoopThread();
 		loop.setSensor(sensor);
-		loop.run();
+		loop.start();
 	}
 	
 	class LoopThread extends Thread {
@@ -76,7 +82,11 @@ public class Sensor implements NotificationListener {
 			while(loop == thisThread){
 				not = new Notification();
 				reading = sensor.sense();
-			    not.set("NAME", reading);     
+			    not.set("APPLICATIONID", applicationId);
+			    not.set("FROMID", id);
+			    not.set("DESTID","HomeManager"); //TODO really ugly hard coded id
+			    not.set("QUERY", id);
+			    not.set("VALUE", reading);
 			    try {
 					elvin.send(not);
 					Thread.sleep(1000);
@@ -95,21 +105,26 @@ public class Sensor implements NotificationListener {
 			loop = null;
 			temp.interrupt();
 			sensor.shutDown();
+			active=false;
 		}
 		
 	
 	}
 	
 	public void main(String [] args){
-		
+		String applicationid = "42207313";
+		String id = args[0];  //TODO Put an unique value
+		Sensor sensor = new Sensor(args[0],args[1],args[2],applicationid,id);
+		sensor.startLoop();
+		while(sensor.active){
+		}
 	}
 
 	@Override
 	public void notificationReceived(NotificationEvent event) {
 		if(event.notification.get("NAME").equals("shutdown")) {
-			loop.stopLoop();
 			elvin.close();
-			System.exit(0);
+			loop.stopLoop();
 		}
 	}
 	
